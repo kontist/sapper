@@ -10,6 +10,7 @@ export type Page = {
 	pattern: RegExp;
 	parts: Array<{
 		name: string;
+		file?: string;
 		component: Component;
 		params?: (match: RegExpMatchArray) => Record<string, string>;
 	}>

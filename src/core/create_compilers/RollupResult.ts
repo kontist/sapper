@@ -6,16 +6,17 @@ import extract_css from './extract_css';
 import { left_pad } from '../../utils';
 import { CompileResult, BuildInfo, CompileError, Chunk, CssFile } from './interfaces';
 import { ManifestData, Dirs } from '../../interfaces';
+import { get_slug } from '../../utils';
 
 export default class RollupResult implements CompileResult {
 	duration: number;
 	errors: CompileError[];
 	warnings: CompileError[];
 	chunks: Chunk[];
-	assets: Record<string, string>;
+	assets: Record<string, string | string[]>;
 	css_files: CssFile[];
 	css: {
-		main: string,
+		main: string | null,
 		chunks: Record<string, string[]>
 	};
 	summary: string;
@@ -38,10 +39,22 @@ export default class RollupResult implements CompileResult {
 		// webpack, but we can have a route -> [chunk] map or something
 		this.assets = {};
 
+		// NOTE: this hardcodes the routes dir and Svelte file extension!
+		const routes_dir = process.cwd() + '/src/routes/';
+
 		if (typeof compiler.input === 'string') {
 			compiler.chunks.forEach(chunk => {
 				if (compiler.input in chunk.modules) {
-					this.assets.main = chunk.fileName;
+					this.assets.main = [chunk.fileName, ...chunk.imports];
+				} else {
+					Object.keys(chunk.modules).filter((module: string) => {
+						return module.startsWith(routes_dir);
+					}).filter((module: string) => {
+						return module.endsWith('.html');
+					}).forEach((module: string) => {
+						const page_slug = get_slug(path.relative(routes_dir, module));
+						this.assets[page_slug] = [...chunk.imports, chunk.fileName];
+					});
 				}
 			});
 		} else {

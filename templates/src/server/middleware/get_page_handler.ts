@@ -39,29 +39,45 @@ export function get_page_handler(
 			bundler: 'rollup' | 'webpack',
 			shimport: string | null,
 			assets: Record<string, string | string[]>,
-			legacy_assets?: Record<string, string>
+			legacy_assets?: Record<string, string>,
+			css: {
+				main: string | null,
+				chunks: Record<string, string[]>
+			}
 		 } = get_build_info();
 
 		res.setHeader('Content-Type', 'text/html');
 		res.setHeader('Cache-Control', dev ? 'no-cache' : 'max-age=600');
 
 		// preload main.js and current route
-		// TODO detect other stuff we can preload? images, CSS, fonts?
-		let preloaded_chunks = Array.isArray(build_info.assets.main) ? build_info.assets.main : [build_info.assets.main];
+		// TODO detect other stuff we can preload? images, fonts?
+		let preloaded_chunks = [].concat(build_info.css.main, build_info.assets.main);
 		if (!error && !isSWIndexHtml) {
 			page.parts.forEach(part => {
 				if (!part) return;
 
 				// using concat because it could be a string or an array. thanks webpack!
+				preloaded_chunks = preloaded_chunks.concat(build_info.css.chunks[part.file]);
 				preloaded_chunks = preloaded_chunks.concat(build_info.assets[part.name]);
 			});
 		}
 
 		if (build_info.bundler === 'rollup') {
-			// TODO add dependencies and CSS
+			// TODO add dependencies
 			const link = preloaded_chunks
 				.filter(file => file && !file.match(/\.map$/))
-				.map(file => `<${req.baseUrl}/client/${file}>;rel="modulepreload"`)
+				.map(file => {
+					const css = /\.css$/.test(file);
+					const rel = css ? 'preload' : 'modulepreload';
+
+					let preload = `<${req.baseUrl}/client/${file}>;rel="${rel}"`;
+
+					if (css) {
+						preload = preload + ';as="style"';
+					}
+
+					return preload;
+				})
 				.join(', ');
 
 			res.setHeader('Link', link);

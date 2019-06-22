@@ -25,6 +25,22 @@ export function elapsed(start: number) {
 	return format_milliseconds(Date.now() - start);
 }
 
+export function get_slug(file: string) {
+	let name = file
+		.replace(/[\\\/]index/, '')
+		.replace(/_default([\/\\index])?\.html$/, 'index')
+		.replace(/[\/\\]/g, '_')
+		.replace(/\.\w+$/, '')
+		.replace(/\[([^(]+)(?:\([^(]+\))?\]/, '$$$1')
+		.replace(/[^a-zA-Z0-9_$]/g, c => {
+			return c === '.' ? '_' : `$${c.charCodeAt(0)}`
+		});
+
+ 	if (reserved_words.has(name)) name += '_';
+	return name;
+}
+
+
 export function walk(cwd: string, dir = cwd, files: string[] = []) {
 	fs.readdirSync(dir).forEach(file => {
 		const resolved = path.resolve(dir, file);
