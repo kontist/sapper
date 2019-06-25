@@ -6,6 +6,7 @@ import {
 	scroll_history,
 	scroll_state,
 	select_route,
+	handle_error,
 	set_store,
 	set_target,
 	uid,
@@ -38,10 +39,12 @@ export default function start(opts: {
 
 		history.replaceState({ id: uid }, '', href);
 
-		if (!initial_data.error) {
-			const target = select_route(new URL(location.href));
-			if (target) return navigate(target, uid, false, hash);
-		}
+		const url = new URL(location.href);
+
+		if (initial_data.error) return handle_error(url);
+
+		const target = select_route(url);
+		if (target) return navigate(target, uid, false, hash);
 	});
 }
 

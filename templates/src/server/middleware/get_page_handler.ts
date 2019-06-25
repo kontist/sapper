@@ -199,11 +199,6 @@ export function get_page_handler(
 				return;
 			}
 
-			const serialized = {
-				preloaded: `[${preloaded.map(data => try_serialize(data)).join(',')}]`,
-				store: store && try_serialize(store.get())
-			};
-
 			const segments = req.path.split('/').filter(Boolean);
 
 			const props: Props = {
@@ -217,6 +212,12 @@ export function get_page_handler(
 				props.error = error instanceof Error ? error : { message: error };
 				props.status = status;
 			}
+
+			const serialized = {
+				preloaded: `[${preloaded.map(data => try_serialize(data)).join(',')}]`,
+				store: store && try_serialize(store.get()),
+				error: error && try_serialize(props.error)
+			};
 
 			const data = Object.assign({}, props, preloaded[0], {
 				params: {},
@@ -256,7 +257,7 @@ export function get_page_handler(
 			});
 
 			let script = `__SAPPER__={${[
-				error && `error:1`,
+				error && `error:${serialized.error},status:${props.status}`,
 				`baseUrl:"${req.baseUrl}"`,
 				serialized.preloaded && `preloaded:${serialized.preloaded}`,
 				serialized.store && `store:${serialized.store}`

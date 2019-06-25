@@ -8,6 +8,7 @@ import {
 	ComponentLoader,
 	ComponentConstructor,
 	RootProps,
+	Query,
 	Page
 } from './types';
 import goto from './goto';
@@ -73,6 +74,20 @@ export { _history as history };
 
 export const scroll_history: Record<string, ScrollPosition> = {};
 
+export function extract_query(search: string) {
+	const query: Record<string, string | string[]> = Object.create(null);
+	if (search.length > 0) {
+		search.slice(1).split('&').forEach(searchParam => {
+			let [, key, value] = /([^=]*)(?:=(.*))?/.exec(decodeURIComponent(searchParam));
+			value = (value || '').replace(/\+/g, ' ');
+			if (typeof query[key] === 'string') query[key] = [<string>query[key]];
+			if (typeof query[key] === 'object') (query[key] as string[]).push(value);
+			else query[key] = value;
+		});
+	}
+	return query;
+}
+
 export function select_route(url: URL): Target {
 	if (url.origin !== location.origin) return null;
 	if (!url.pathname.startsWith(initial_data.baseUrl)) return null;
@@ -84,22 +99,49 @@ export function select_route(url: URL): Target {
 
 	for (let i = 0; i < pages.length; i += 1) {
 		const page = pages[i];
-
 		const match = page.pattern.exec(path);
+
 		if (match) {
-			const query: Record<string, string | string[]> = Object.create(null);
-			if (url.search.length > 0) {
-				url.search.slice(1).split('&').forEach(searchParam => {
-					let [, key, value] = /([^=]*)(?:=(.*))?/.exec(decodeURIComponent(searchParam));
-					value = (value || '').replace(/\+/g, ' ');
-					if (typeof query[key] === 'string') query[key] = [<string>query[key]];
-					if (typeof query[key] === 'object') query[key].push(value);
-					else query[key] = value;
-				});
-			}
+			const query = extract_query(url.search);
 			return { url, path, page, match, query };
 		}
 	}
+}
+
+export function handle_error(url: URL) {
+	const { pathname, search } = url;
+	const { preloaded, error, status } = initial_data;
+
+ 	if (!root_preload) {
+		root_preload = preloaded && preloaded[0]
+	}
+
+	const token = current_token = {};
+
+	const query = extract_query(search);
+
+	const props = {
+		path: pathname,
+		query,
+		params: {},
+		error: typeof error.message === 'string' ? new Error(error.message) : error.message,
+		status
+	};
+
+	const data = Object.assign({}, props, {
+		preloading: false,
+		child: {
+			component: ErrorComponent,
+			props
+		}
+	});
+
+	const scroll = {
+		x: 0,
+		y:0 
+	};
+
+	render(data, 0, scroll, false, '', token);
 }
 
 export function scroll_state() {
