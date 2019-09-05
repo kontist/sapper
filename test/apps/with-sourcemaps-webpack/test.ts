@@ -13,10 +13,10 @@ describe('with-sourcemaps-webpack', function() {
 	let base: string;
 
 	// helpers
-	let start: () => Promise<void>;
-	let prefetchRoutes: () => Promise<void>;
-	let prefetch: (href: string) => Promise<void>;
-	let goto: (href: string) => Promise<void>;
+	let start: () => Promise<Promise<void>>;
+	let prefetchRoutes: () => Promise<Promise<void>>;
+	let prefetch: (href: string) => Promise<Promise<void>>;
+	let goto: (href: string) => Promise<Promise<void>>;
 
 	// hooks
 	before(async () => {
