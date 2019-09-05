@@ -12,7 +12,7 @@ describe('layout', function() {
 	let base: string;
 
 	// helpers
-	let start: () => Promise<void>;
+	let start: () => Promise<Promise<void>>;
 
 	// hooks
 	before(async () => {

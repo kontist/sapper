@@ -12,8 +12,8 @@ describe('encoding', function() {
 	let base: string;
 
 	// helpers
-	let start: () => Promise<void>;
-	let prefetchRoutes: () => Promise<void>;
+	let start: () => Promise<Promise<void>>;
+	let prefetchRoutes: () => Promise<Promise<void>>;
 
 	// hooks
 	before(async () => {
